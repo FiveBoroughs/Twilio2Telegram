@@ -1,20 +1,21 @@
-import os
-import logging
-from functools import wraps
-from flask import Flask, request, abort
-from waitress import serve
-from twilio.request_validator import RequestValidator
-from telegram import ParseMode
-from telegram.ext import Updater, CommandHandler
+try:
+    import os
+    import logging
+    from functools import wraps
+    from flask import Flask, request, abort
+    from waitress import serve
+    from twilio.request_validator import RequestValidator
+    from telegram import ParseMode
+    from telegram.ext import Updater, CommandHandler
+except ImportError as err:
+    print(f"Failed to import required modules: {err}")
 
-# Enable logging
+# FB - Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 webhook_listener = Flask(__name__)
-
-telegram_bot = None
 
 
 def validate_twilio_request(f):
@@ -34,12 +35,14 @@ def validate_twilio_request(f):
         if request_valid:
             return f(*args, **kwargs)
         else:
+            logger.error('Invalid twilio request, aborting')
             return abort(403)
     return decorated_function
 
 
-def tg_help_handler(update):
+def tg_help_handler(update, context):
     """Send a message when the command /help is issued."""
+    logger.info('/help command received in chat: %s', update.message.chat)
     update.message.reply_markdown(
         'Find out more on [Github](https://github.com/FiveBoroughs/Twilio2Telegram)')
 
@@ -51,32 +54,32 @@ def tg_error_handler(update, context):
 
 def tg_bot_start():
     """Start the telegram bot."""
-    # Create the Updater
-    updater = Updater(os.environ.get('TELEGRAM_BOT_TOKEN'))
+    # FB - Create the Updater
+    updater = Updater(os.environ.get('TELEGRAM_BOT_TOKEN'), use_context=True)
 
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
+    # FB - Get the dispatcher to register handlers
+    dispatcher = updater.dispatcher
 
-    # on /help command
-    dp.add_handler(CommandHandler("help", tg_help_handler))
+    # FB - on /help command
+    dispatcher.add_handler(CommandHandler("help", tg_help_handler))
 
-    # log all errors
-    dp.add_error_handler(tg_error_handler)
+    # FB - log all errors
+    dispatcher.add_error_handler(tg_error_handler)
 
-    # Start the Bot
+    # FB - Start the Bot
     updater.start_polling()
 
     return updater.bot
 
 
 def tg_send_owner_message(message):
-    """Send telegram to owner."""
+    """Send telegram message to owner."""
     telegram_bot.sendMessage(text=message, chat_id=os.environ.get(
         'TELEGRAM_OWNER'), parse_mode=ParseMode.MARKDOWN)
 
 
 def tg_send_subscribers_message(message):
-    """Send telegram messages."""
+    """Send telegram messages to subscribers."""
     for telegram_destination in os.environ.get('TELEGRAM_SUBSCRIBERS').split(','):
         telegram_bot.sendMessage(
             text=message, chat_id=telegram_destination, parse_mode=ParseMode.MARKDOWN)
@@ -84,14 +87,17 @@ def tg_send_subscribers_message(message):
 
 @webhook_listener.route('/', methods=['GET'])
 def index():
-    """Return homepage."""
+    """Upon call of homepage."""
+    logger.info('"/" reached, IP: %s', request.remote_addr)
+
     return webhook_listener.send_static_file('Index.html')
 
 # FB - Message Webhook
 @webhook_listener.route('/message', methods=['POST'])
-# @validate_twilio_request
+@validate_twilio_request
 def recv_message():
     """Upon reception of a SMS."""
+    logger.info(' "/message" reached, IP: %s', request.remote_addr)
     # FB - Format telegram Message
     telegram_message = 'Text from `+{From}` ({Country}, {State}) :```   {Body}```'.format(
         From=request.values.get('From', 'unknown'),
@@ -100,6 +106,7 @@ def recv_message():
         Body=request.values.get('Body', 'unknown')
     )
 
+    logger.info(telegram_message)
     # FB - Send telegram alerts
     tg_send_owner_message('Twilio ID : `{Id}`\n'.format(
         Id=request.values.get('MessageSid', 'unknown')) + telegram_message)
@@ -110,9 +117,10 @@ def recv_message():
 
 # FB - Call Webhook
 @webhook_listener.route('/call', methods=['POST'])
-# @validate_twilio_request
+@validate_twilio_request
 def recv_call():
     """Upon reception of a call."""
+    logger.info(' "/call" reached, IP: %s', request.remote_addr)
     # FB - Format telegram Message
     telegram_message = 'Call from `+{From}` ({Country}, {State}) :```   {Status}```'.format(
         From=request.values.get('From', 'unknown'),
@@ -121,6 +129,7 @@ def recv_call():
         Status=request.values.get('CallStatus', 'unknown')
     )
 
+    logger.info(telegram_message)
     # FB - Send telegram alerts
     tg_send_owner_message('Twilio ID : `{Id}`\n'.format(
         Id=request.values.get('CallSid', 'unknown')) + telegram_message)
@@ -131,6 +140,7 @@ def recv_call():
 
 
 if __name__ == "__main__":
+    logger.info('Starting bot')
     # FB - Start the telegram bot
     telegram_bot = tg_bot_start()
     # FB - Start the website
