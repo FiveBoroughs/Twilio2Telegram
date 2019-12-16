@@ -1,6 +1,4 @@
 flask
-requests
-pyOpenSSL
 waitress
 twilio
 python-telegram-bot

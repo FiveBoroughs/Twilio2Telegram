@@ -51,15 +51,13 @@ def tg_error_handler(update, context):
 
 def tg_bot_start():
     """Start the telegram bot."""
-    # Create the Updater and pass it your bot's token.
-    # Make sure to set use_context=True to use the new context based callbacks
-    # Post version 12 this will no longer be necessary
+    # Create the Updater
     updater = Updater(os.environ.get('TELEGRAM_BOT_TOKEN'))
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # on different commands - answer in Telegram
+    # on /help command
     dp.add_handler(CommandHandler("help", tg_help_handler))
 
     # log all errors
