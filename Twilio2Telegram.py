@@ -12,7 +12,7 @@ except ImportError as err:
 
 # FB - Enable logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+    format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 webhook_listener = Flask(__name__)
@@ -99,7 +99,7 @@ def recv_message():
     """Upon reception of a SMS."""
     logger.info(' "/message" reached, IP: %s', request.remote_addr)
     # FB - Format telegram Message
-    telegram_message = 'Text from `+{From}` ({Country}, {State}) :```   {Body}```'.format(
+    telegram_message = 'Text from `{From}` ({Country}, {State}) :```   {Body}```'.format(
         From=request.values.get('From', 'unknown'),
         Country=request.values.get('FromCountry', 'unknown'),
         State=request.values.get('FromState', 'unknown'),
@@ -122,7 +122,7 @@ def recv_call():
     """Upon reception of a call."""
     logger.info(' "/call" reached, IP: %s', request.remote_addr)
     # FB - Format telegram Message
-    telegram_message = 'Call from `+{From}` ({Country}, {State}) :```   {Status}```'.format(
+    telegram_message = 'Call from `{From}` ({Country}, {State}) :```   {Status}```'.format(
         From=request.values.get('From', 'unknown'),
         Country=request.values.get('FromCountry', 'unknown'),
         State=request.values.get('FromState', 'unknown'),

@@ -1,6 +1,6 @@
 # ![Logo](/static/Twilio2Telegram_logo.png) Twilio2Telegram
 
-Forward SMS and Calls from your Twilio number to Telegram
+Forward Texts and Calls from your Twilio number to Telegram
 
 ## Installation
 
@@ -32,4 +32,4 @@ And add the domain or ip of the server hosting Twilio2Telgram, `/call` for calls
 
 Optional :
 Twilio2Telegram listens for webhook calls on the 8080 port.
-If you want to add https and user the port 80, set up a reverse proxy on the machine
+If you want to add https and use the port 80, set up a reverse proxy on the machine
